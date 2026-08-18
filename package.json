@@ -1,0 +1,35 @@
+{
+  "name": "getplu-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Model Context Protocol server exposing GetPlu payment cards to AI agents.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "getplu-mcp": "dist/server.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "node --env-file-if-exists=.env --watch src/server.ts",
+    "start": "node --env-file-if-exists=.env dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}
