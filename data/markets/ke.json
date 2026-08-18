@@ -1,0 +1,29 @@
+{
+  "code": "KE",
+  "iso3": "KEN",
+  "name": "Kenya",
+  "aliases": ["Republic of Kenya"],
+  "region": "East Africa",
+  "status": "live",
+  "currency": { "code": "KES", "symbol": "KSh", "minorUnits": 2 },
+  "locale": { "languages": ["en", "sw"], "timezone": "Africa/Nairobi", "callingCode": "+254" },
+  "products": [
+    { "id": "virtual-usd-card", "status": "live" },
+    { "id": "virtual-local-card", "status": "live" },
+    { "id": "stablecoin-wallet", "status": "live" },
+    { "id": "local-payout", "status": "live", "note": "Payout lands in an M-Pesa wallet." },
+    { "id": "physical-card", "status": "waitlist" },
+    { "id": "agent-card", "status": "waitlist" }
+  ],
+  "funding": [
+    { "id": "mobile-money", "status": "live", "note": "M-Pesa is the default funding path, not the fallback." },
+    { "id": "bank-transfer", "status": "live" },
+    { "id": "stablecoin", "status": "live" }
+  ],
+  "compliance": {
+    "kycRequired": true,
+    "tiers": ["national-id", "kra-pin"],
+    "regulator": "Central Bank of Kenya"
+  },
+  "notes": "Mobile-money-first market; bank transfer is secondary for most consumers."
+}

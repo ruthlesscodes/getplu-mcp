@@ -1,13 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PluClient } from "../services/plu-client.js";
-import { registerCardTools } from "./cards.js";
-import { registerTransactionTools } from "./transactions.js";
+import type { MarketRegistry } from "../markets/registry.js";
+import { registerMarketTools } from "./get-market.js";
 
-export { registerCardTools } from "./cards.js";
-export { registerTransactionTools } from "./transactions.js";
+export { registerMarketTools } from "./get-market.js";
 
 /** Single place every tool module gets wired in. */
-export function registerTools(server: McpServer, client: PluClient): void {
-  registerCardTools(server, client);
-  registerTransactionTools(server, client);
+export function registerTools(server: McpServer, registry: MarketRegistry): void {
+  registerMarketTools(server, registry);
 }

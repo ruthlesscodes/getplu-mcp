@@ -1,121 +1,138 @@
 # getplu-mcp
 
-A [Model Context Protocol](https://modelcontextprotocol.io) server that exposes GetPlu payment
-cards to AI agents and MCP-capable clients. It wraps the GetPlu REST API in typed tools for
-issuing, inspecting, freezing, and reconciling cards held by either humans or agents.
+A [Model Context Protocol](https://modelcontextprotocol.io) server that answers one question for
+any country on earth: **does GetPlu operate here, and what can a user do?**
 
-> **Status: scaffold.** The tool surface, transport, and tests are real and running. The REST
-> endpoints in `src/services/plu-client.ts` are the expected shapes — verify each path and payload
-> against the live GetPlu API reference before pointing this at a production key.
+```
+ChatGPT  →  GetPlu MCP  →  get_market("NG")  →  { supported: true, country: "Nigeria", products: [...] }
+```
 
-## Requirements
+Country coverage is **data, not code**. Adding market #6, #20, or #125 means dropping one JSON file
+into `data/markets/` — no TypeScript is touched, no build changes, no deploy logic. Five markets
+ship today (Nigeria, Kenya, Argentina, Philippines, Singapore), chosen because their user behaviour
+and funding rails differ sharply enough to stress the framework.
 
-- Node.js >= 22.18 (the `dev` script relies on native TypeScript type stripping)
-- A GetPlu API key — use a **sandbox** key for local work
+## Scope
 
-## Setup
+This is the foundation milestone. Deliberately **not** built yet: UI, Agent Card, authenticated
+accounts, transactions. One read-only tool, no secrets, no database.
+
+## Quick start
 
 ```bash
 npm install
-cp .env.example .env   # then fill in PLU_API_KEY
 npm test
 npm run build
+
+# stdio — Claude Desktop, Claude Code
+npm start
+
+# Streamable HTTP — required for ChatGPT
+MCP_TRANSPORT=http npm start
+curl http://localhost:8787/health
 ```
 
-## Running
+## Adding a country
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Runs `src/server.ts` directly, restarting on change |
-| `npm run build` | Compiles TypeScript to `dist/` |
-| `npm start` | Runs the compiled server from `dist/` |
-| `npm test` | Runs the Vitest suite once |
-| `npm run test:watch` | Runs Vitest in watch mode |
-| `npm run typecheck` | Type-checks without emitting |
+1. Create `data/markets/<code>.json` (lowercase ISO alpha-2 filename).
+2. Reference product and funding ids that already exist in `data/catalog/`.
+3. Restart. That's it.
 
-The server speaks MCP over **stdio**. Stdout is the protocol stream, so all logging goes to
-stderr — never `console.log` from a tool handler.
+```json
+{
+  "code": "GH",
+  "iso3": "GHA",
+  "name": "Ghana",
+  "aliases": ["Republic of Ghana"],
+  "region": "West Africa",
+  "status": "beta",
+  "currency": { "code": "GHS", "symbol": "GH₵", "minorUnits": 2 },
+  "locale": { "languages": ["en"], "timezone": "Africa/Accra", "callingCode": "+233" },
+  "products": [{ "id": "virtual-usd-card", "status": "beta" }],
+  "funding": [{ "id": "mobile-money", "status": "live" }],
+  "compliance": { "kycRequired": true, "tiers": ["ghana-card"], "regulator": "Bank of Ghana" }
+}
+```
 
-## Configuration
+The registry validates every file at startup and **refuses to boot** on a bad one, naming the file,
+the field, and the fix. A market referencing a product that isn't in the catalog is an error, not a
+silently empty list. New products or funding rails are added once to `data/catalog/` and then reused
+by every market.
 
-All configuration comes from the environment and is validated at startup (see `.env.example`).
+`status` drives supportability: `live` and `beta` are supported; `waitlist` and `unsupported` are
+not. The same field works per-product, so Singapore can have `physical-card: live` while Kenya has
+it on `waitlist`.
 
-| Variable | Required | Default | Notes |
-| --- | --- | --- | --- |
-| `PLU_API_KEY` | yes | — | Sandbox or live GetPlu key |
-| `PLU_API_BASE_URL` | no | `https://api.getplu.com/v1` | Trailing slashes are stripped |
-| `PLU_ENVIRONMENT` | no | `sandbox` | `sandbox` or `live` |
-| `PLU_REQUEST_TIMEOUT_MS` | no | `15000` | Per-request timeout |
-| `LOG_LEVEL` | no | `info` | `debug` / `info` / `warn` / `error` |
+## The tool
 
-## Connecting a client
+`get_market(country)` — accepts an ISO alpha-2 (`NG`), alpha-3 (`NGA`), country name (`Nigeria`),
+alias (`Naija`), or calling code (`+234`). Matching ignores case, spacing, punctuation, and accents.
 
-Claude Code:
+Returns structured JSON (plus a text summary for clients that ignore structured output):
+
+```json
+{
+  "supported": true,
+  "country": "Nigeria",
+  "code": "NG",
+  "status": "live",
+  "region": "West Africa",
+  "currency": { "code": "NGN", "symbol": "₦", "minorUnits": 2 },
+  "products": [{ "id": "virtual-usd-card", "name": "Virtual USD Card", "status": "live", "description": "..." }],
+  "funding": [{ "id": "bank-transfer", "name": "Bank Transfer", "status": "live", "description": "..." }],
+  "notes": "..."
+}
+```
+
+An unconfigured country is a **valid answer, not an error** — `supported: false` with a `reason`
+listing where GetPlu does operate.
+
+## Connecting ChatGPT
+
+ChatGPT connectors require a **remote HTTPS** MCP server. stdio will not work.
+
+1. Run with `MCP_TRANSPORT=http` and expose it over HTTPS (deploy, or `ngrok http 8787` for a test).
+2. In ChatGPT: **Settings → Connectors → Create**, and give it the `/mcp` URL.
+3. Enable the connector in a conversation, then ask *"Does GetPlu work in Nigeria?"*
+
+The endpoint is stateless — a fresh server per request, no session store — so it scales
+horizontally and survives cold starts.
+
+## Connecting Claude
 
 ```bash
 claude mcp add getplu -- node /absolute/path/to/getplu-mcp/dist/server.js
 ```
 
-Claude Desktop (`claude_desktop_config.json`):
+## Configuration
 
-```json
-{
-  "mcpServers": {
-    "getplu": {
-      "command": "node",
-      "args": ["/absolute/path/to/getplu-mcp/dist/server.js"],
-      "env": { "PLU_API_KEY": "plu_sk_sandbox_..." }
-    }
-  }
-}
-```
-
-## Tools
-
-| Tool | Kind | Description |
+| Variable | Default | Notes |
 | --- | --- | --- |
-| `list_cards` | read-only | List cards, filtered by holder type and status |
-| `get_card` | read-only | Fetch one card with its limit and holder |
-| `create_card` | write | Issue a virtual or physical card to a human or agent |
-| `set_card_status` | destructive | Freeze, reactivate, or cancel a card |
-| `list_transactions` | read-only | List transactions, newest first |
+| `MCP_TRANSPORT` | `stdio` | `stdio` or `http` |
+| `PORT` | `8787` | HTTP transport only |
+| `HOST` | `0.0.0.0` | HTTP transport only |
+| `PLU_MARKET_DATA_DIR` | repo `data/` | Point at a mounted volume in production |
+| `LOG_LEVEL` | `info` | Logs go to stderr; stdout is the protocol stream |
 
-Amounts are always in **minor units** (`50000` = `$500.00`).
-
-## Resources
-
-Read-only HTML views for clients that render embedded resources:
-
-- `ui://getplu/cards`
-- `ui://getplu/transactions`
-
-`list_cards` and `list_transactions` also return their rendered table alongside the plain-text
-summary, so text-only clients lose nothing.
+No API keys. This milestone reads configuration files only.
 
 ## Layout
 
 ```
 getplu-mcp
-├── README.md
-├── package.json
-├── tsconfig.json
+├── data/
+│   ├── catalog/          products.json, funding.json — defined once, reused everywhere
+│   └── markets/          one file per country: ng, ke, ar, ph, sg
 ├── src/
-│   ├── server.ts          # entry point: config, wiring, stdio transport
-│   ├── tools/             # MCP tool definitions (one module per domain)
-│   ├── services/          # GetPlu API client, config, logging, shared types
-│   └── ui/                # HTML templates + ui:// resource registration
-├── tests/
-├── .env.example
-└── .gitignore
+│   ├── server.ts         transport selection (stdio | streamable HTTP)
+│   ├── markets/          schema.ts (the contract), registry.ts (load + validate + resolve)
+│   ├── tools/            get-market.ts
+│   └── services/         config.ts, logger.ts
+└── tests/
 ```
 
-`createServer(client)` in `src/server.ts` is exported so tests can drive the whole server over an
-in-memory transport with a stubbed API client — see `tests/server.test.ts`.
+## Tests
 
-## Adding a tool
-
-1. Add a `registerXTools(server, client)` function in `src/tools/`.
-2. Call it from `registerTools` in `src/tools/index.ts`.
-3. Wrap the handler body in `guard()` from `src/tools/result.ts` so API failures come back as
-   `isError` results instead of crashing the server.
-4. Add a case to `tests/server.test.ts`.
+`npm test` — 18 cases covering config, registry loading and validation, and the tool end to end over
+an in-memory MCP transport. One test proves the central claim by writing a sixth country to a temp
+directory and asserting it resolves with no code change.

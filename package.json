@@ -1,8 +1,8 @@
 {
   "name": "getplu-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Model Context Protocol server exposing GetPlu payment cards to AI agents.",
+  "description": "MCP server exposing GetPlu market availability to AI agents. Country coverage is data, not code.",
   "license": "UNLICENSED",
   "type": "module",
   "main": "dist/server.js",
@@ -10,7 +10,8 @@
     "getplu-mcp": "dist/server.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "data"
   ],
   "engines": {
     "node": ">=22.18.0"

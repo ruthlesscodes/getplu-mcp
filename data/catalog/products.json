@@ -1,0 +1,38 @@
+[
+  {
+    "id": "virtual-usd-card",
+    "name": "Virtual USD Card",
+    "category": "card",
+    "description": "Instantly issued virtual card denominated in USD, usable anywhere Visa or Mastercard is accepted online."
+  },
+  {
+    "id": "virtual-local-card",
+    "name": "Virtual Local Card",
+    "category": "card",
+    "description": "Virtual card denominated in the local currency, for domestic online spend without FX."
+  },
+  {
+    "id": "physical-card",
+    "name": "Physical Card",
+    "category": "card",
+    "description": "Shipped physical card linked to the same balance as the virtual card."
+  },
+  {
+    "id": "agent-card",
+    "name": "Agent Card",
+    "category": "card",
+    "description": "Programmatic card issued to an AI agent with per-agent spend controls."
+  },
+  {
+    "id": "stablecoin-wallet",
+    "name": "Stablecoin Wallet",
+    "category": "account",
+    "description": "USDC and USDT balance that funds card spend directly."
+  },
+  {
+    "id": "local-payout",
+    "name": "Local Payout",
+    "category": "payout",
+    "description": "Withdraw to a local bank account or mobile money wallet."
+  }
+]

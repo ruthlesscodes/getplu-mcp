@@ -1,123 +1,109 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/server.js";
-import type { PluClient } from "../src/services/plu-client.js";
-import type { Card, Transaction } from "../src/services/types.js";
+import { loadMarketRegistry } from "../src/markets/registry.js";
 
-const card: Card = {
-  id: "card_agent_01",
-  kind: "virtual",
-  status: "active",
-  brand: "Visa",
-  last4: "4242",
-  currency: "USD",
-  spendLimit: 50_000,
-  spendPeriod: "month",
-  holder: { type: "agent", id: "agent_01", name: "Research Agent" },
-  createdAt: "2026-08-01T09:00:00.000Z",
-};
-
-const transaction: Transaction = {
-  id: "txn_01",
-  cardId: card.id,
-  amount: 1299,
-  currency: "USD",
-  merchant: "OpenRouter",
-  status: "settled",
-  createdAt: "2026-08-02T11:30:00.000Z",
-};
-
-function stubClient(overrides: Partial<PluClient> = {}): PluClient {
-  return {
-    listCards: vi.fn().mockResolvedValue({ data: [card], hasMore: false }),
-    getCard: vi.fn().mockResolvedValue(card),
-    createCard: vi.fn().mockResolvedValue(card),
-    setCardStatus: vi.fn().mockResolvedValue({ ...card, status: "frozen" }),
-    listTransactions: vi.fn().mockResolvedValue({ data: [transaction], hasMore: false }),
-    ...overrides,
-  } as unknown as PluClient;
+interface MarketPayload {
+  supported: boolean;
+  country: string | null;
+  code: string | null;
+  status: string;
+  products: Array<{ id: string; name: string; status: string }>;
+  funding: Array<{ id: string; status: string }>;
+  reason?: string;
 }
 
-async function connect(plu: PluClient): Promise<Client> {
+async function connect(): Promise<Client> {
   const client = new Client({ name: "test-client", version: "0.0.0" });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await Promise.all([
-    createServer(plu).connect(serverTransport),
+    createServer(loadMarketRegistry()).connect(serverTransport),
     client.connect(clientTransport),
   ]);
   return client;
 }
 
-describe("getplu-mcp server", () => {
-  let plu: PluClient;
+async function getMarket(client: Client, country: string): Promise<MarketPayload> {
+  const response = await client.callTool({ name: "get_market", arguments: { country } });
+  expect(response.isError).toBeFalsy();
+  return response.structuredContent as unknown as MarketPayload;
+}
 
-  beforeEach(() => {
-    plu = stubClient();
+describe("get_market over MCP", () => {
+  it("exposes exactly one tool", async () => {
+    const tools = (await connect().then((client) => client.listTools())).tools;
+
+    expect(tools.map((tool) => tool.name)).toEqual(["get_market"]);
+    expect(tools[0]?.inputSchema.properties).toHaveProperty("country");
   });
 
-  it("exposes the expected tools", async () => {
-    const client = await connect(plu);
+  it("returns the shape the foundation milestone specifies", async () => {
+    const client = await connect();
 
-    const names = (await client.listTools()).tools.map((tool) => tool.name).sort();
+    const market = await getMarket(client, "NG");
 
-    expect(names).toEqual([
-      "create_card",
-      "get_card",
-      "list_cards",
-      "list_transactions",
-      "set_card_status",
-    ]);
+    expect(market.supported).toBe(true);
+    expect(market.country).toBe("Nigeria");
+    expect(market.products.length).toBeGreaterThan(0);
   });
 
-  it("exposes the ui:// resources", async () => {
-    const client = await connect(plu);
+  it("answers for every launch market", async () => {
+    const client = await connect();
 
-    const uris = (await client.listResources()).resources.map((resource) => resource.uri).sort();
-
-    expect(uris).toEqual(["ui://getplu/cards", "ui://getplu/transactions"]);
-  });
-
-  it("returns text plus an HTML resource from list_cards", async () => {
-    const client = await connect(plu);
-
-    const result = await client.callTool({ name: "list_cards", arguments: { holderType: "agent" } });
-    const content = result.content as Array<Record<string, unknown>>;
-
-    expect(result.isError).toBeFalsy();
-    expect(content[0]).toMatchObject({ type: "text" });
-    expect(String(content[0]!.text)).toContain("card_agent_01");
-    expect(content[1]).toMatchObject({ type: "resource" });
-    expect(plu.listCards).toHaveBeenCalledWith(
-      expect.objectContaining({ holderType: "agent", limit: 20 }),
+    const answers = await Promise.all(
+      ["NG", "KE", "AR", "PH", "SG"].map((code) => getMarket(client, code)),
     );
+
+    expect(answers.map((market) => market.country)).toEqual([
+      "Nigeria",
+      "Kenya",
+      "Argentina",
+      "Philippines",
+      "Singapore",
+    ]);
+    expect(answers.every((market) => market.supported)).toBe(true);
   });
 
-  it("formats a single card for get_card", async () => {
-    const client = await connect(plu);
+  it("reflects per-market differences rather than one global answer", async () => {
+    const client = await connect();
 
-    const result = await client.callTool({ name: "get_card", arguments: { cardId: card.id } });
-    const text = String((result.content as Array<{ text?: string }>)[0]?.text);
+    const [kenya, singapore] = await Promise.all([
+      getMarket(client, "Kenya"),
+      getMarket(client, "Singapore"),
+    ]);
 
-    expect(text).toContain("Research Agent");
-    expect(text).toContain("$500.00 per month");
+    expect(kenya!.funding.map((method) => method.id)).toContain("mobile-money");
+    expect(singapore!.funding.map((method) => method.id)).not.toContain("mobile-money");
+    expect(singapore!.products.find((product) => product.id === "physical-card")?.status).toBe("live");
+    expect(kenya!.products.find((product) => product.id === "physical-card")?.status).toBe("waitlist");
   });
 
-  it("reports API failures as tool errors instead of throwing", async () => {
-    const failing = stubClient({
-      getCard: vi.fn().mockRejectedValue(
-        Object.assign(new Error("No such card"), {
-          name: "PluApiError",
-          status: 404,
-          code: "card_not_found",
-        }),
-      ) as PluClient["getCard"],
-    });
-    const client = await connect(failing);
+  it("resolves a country name, not just a code", async () => {
+    const client = await connect();
 
-    const result = await client.callTool({ name: "get_card", arguments: { cardId: "nope" } });
+    expect((await getMarket(client, "Philippines")).code).toBe("PH");
+    expect((await getMarket(client, "+54")).code).toBe("AR");
+  });
 
-    expect(result.isError).toBe(true);
-    expect(String((result.content as Array<{ text?: string }>)[0]?.text)).toContain("No such card");
+  it("reports an unconfigured country as unsupported instead of failing", async () => {
+    const client = await connect();
+
+    const market = await getMarket(client, "Iceland");
+
+    expect(market.supported).toBe(false);
+    expect(market.country).toBeNull();
+    expect(market.products).toEqual([]);
+    expect(market.reason).toContain("Nigeria (NG)");
+  });
+
+  it("also returns a text summary for clients that ignore structured output", async () => {
+    const client = await connect();
+
+    const response = await client.callTool({ name: "get_market", arguments: { country: "NG" } });
+    const text = String((response.content as Array<{ text?: string }>)[0]?.text);
+
+    expect(text).toContain("GetPlu supports Nigeria (NG)");
+    expect(text).toContain("NGN");
   });
 });

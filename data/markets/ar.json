@@ -1,0 +1,33 @@
+{
+  "code": "AR",
+  "iso3": "ARG",
+  "name": "Argentina",
+  "aliases": ["Argentine Republic", "Republica Argentina"],
+  "region": "South America",
+  "status": "beta",
+  "currency": { "code": "ARS", "symbol": "$", "minorUnits": 2 },
+  "locale": {
+    "languages": ["es"],
+    "timezone": "America/Argentina/Buenos_Aires",
+    "callingCode": "+54"
+  },
+  "products": [
+    { "id": "virtual-usd-card", "status": "beta", "note": "USD store of value is the core use case." },
+    { "id": "stablecoin-wallet", "status": "live" },
+    { "id": "local-payout", "status": "beta" },
+    { "id": "virtual-local-card", "status": "waitlist" },
+    { "id": "physical-card", "status": "waitlist" },
+    { "id": "agent-card", "status": "waitlist" }
+  ],
+  "funding": [
+    { "id": "stablecoin", "status": "live", "note": "USDT is the dominant on-ramp." },
+    { "id": "bank-transfer", "status": "beta", "note": "CBU/CVU transfer." },
+    { "id": "ewallet", "status": "beta" }
+  ],
+  "compliance": {
+    "kycRequired": true,
+    "tiers": ["cuit-cuil", "address-proof"],
+    "regulator": "Banco Central de la Republica Argentina"
+  },
+  "notes": "Inflation-driven demand for dollar balances; FX controls make local card rails restrictive."
+}

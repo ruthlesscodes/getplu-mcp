@@ -1,0 +1,30 @@
+{
+  "code": "NG",
+  "iso3": "NGA",
+  "name": "Nigeria",
+  "aliases": ["Naija", "Federal Republic of Nigeria"],
+  "region": "West Africa",
+  "status": "live",
+  "currency": { "code": "NGN", "symbol": "\u20a6", "minorUnits": 2 },
+  "locale": { "languages": ["en"], "timezone": "Africa/Lagos", "callingCode": "+234" },
+  "products": [
+    { "id": "virtual-usd-card", "status": "live", "note": "Primary demand driver: USD spend on global services." },
+    { "id": "virtual-local-card", "status": "live" },
+    { "id": "stablecoin-wallet", "status": "live" },
+    { "id": "local-payout", "status": "live" },
+    { "id": "physical-card", "status": "waitlist" },
+    { "id": "agent-card", "status": "waitlist" }
+  ],
+  "funding": [
+    { "id": "bank-transfer", "status": "live", "note": "NIP instant transfer, settles in seconds." },
+    { "id": "stablecoin", "status": "live" },
+    { "id": "debit-card", "status": "beta" },
+    { "id": "cash-agent", "status": "waitlist" }
+  ],
+  "compliance": {
+    "kycRequired": true,
+    "tiers": ["bvn", "nin", "address-proof"],
+    "regulator": "Central Bank of Nigeria"
+  },
+  "notes": "High demand for USD-denominated spend; local card rails are unreliable for international merchants."
+}

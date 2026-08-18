@@ -1,0 +1,38 @@
+[
+  {
+    "id": "bank-transfer",
+    "name": "Bank Transfer",
+    "rail": "bank-transfer",
+    "description": "Push funds from a local bank account over the domestic instant-payment rail."
+  },
+  {
+    "id": "mobile-money",
+    "name": "Mobile Money",
+    "rail": "mobile-money",
+    "description": "Fund from a mobile money wallet held with a telco."
+  },
+  {
+    "id": "ewallet",
+    "name": "E-Wallet",
+    "rail": "ewallet",
+    "description": "Fund from a domestic e-wallet balance."
+  },
+  {
+    "id": "debit-card",
+    "name": "Debit Card",
+    "rail": "card",
+    "description": "Fund by charging a local debit card."
+  },
+  {
+    "id": "stablecoin",
+    "name": "Stablecoin Deposit",
+    "rail": "crypto",
+    "description": "Deposit USDC or USDT on a supported chain."
+  },
+  {
+    "id": "cash-agent",
+    "name": "Cash Agent",
+    "rail": "cash",
+    "description": "Deposit physical cash through an agent in the partner network."
+  }
+]

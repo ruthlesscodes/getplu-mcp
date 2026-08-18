@@ -1,0 +1,29 @@
+{
+  "code": "PH",
+  "iso3": "PHL",
+  "name": "Philippines",
+  "aliases": ["Republic of the Philippines", "Pilipinas"],
+  "region": "Southeast Asia",
+  "status": "beta",
+  "currency": { "code": "PHP", "symbol": "\u20b1", "minorUnits": 2 },
+  "locale": { "languages": ["en", "fil"], "timezone": "Asia/Manila", "callingCode": "+63" },
+  "products": [
+    { "id": "virtual-usd-card", "status": "beta" },
+    { "id": "virtual-local-card", "status": "beta" },
+    { "id": "stablecoin-wallet", "status": "live" },
+    { "id": "local-payout", "status": "live", "note": "Payout to GCash or a local bank account." },
+    { "id": "physical-card", "status": "waitlist" },
+    { "id": "agent-card", "status": "waitlist" }
+  ],
+  "funding": [
+    { "id": "ewallet", "status": "live", "note": "GCash and Maya cover most consumer funding." },
+    { "id": "bank-transfer", "status": "live", "note": "InstaPay and PESONet." },
+    { "id": "stablecoin", "status": "beta" }
+  ],
+  "compliance": {
+    "kycRequired": true,
+    "tiers": ["philsys-id", "selfie-match"],
+    "regulator": "Bangko Sentral ng Pilipinas"
+  },
+  "notes": "Remittance-heavy market; e-wallet penetration is far ahead of card penetration."
+}

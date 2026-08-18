@@ -1,0 +1,29 @@
+{
+  "code": "SG",
+  "iso3": "SGP",
+  "name": "Singapore",
+  "aliases": ["Republic of Singapore"],
+  "region": "Southeast Asia",
+  "status": "live",
+  "currency": { "code": "SGD", "symbol": "S$", "minorUnits": 2 },
+  "locale": { "languages": ["en"], "timezone": "Asia/Singapore", "callingCode": "+65" },
+  "products": [
+    { "id": "virtual-usd-card", "status": "live" },
+    { "id": "virtual-local-card", "status": "live" },
+    { "id": "physical-card", "status": "live" },
+    { "id": "stablecoin-wallet", "status": "live" },
+    { "id": "local-payout", "status": "live" },
+    { "id": "agent-card", "status": "waitlist" }
+  ],
+  "funding": [
+    { "id": "bank-transfer", "status": "live", "note": "PayNow and FAST." },
+    { "id": "debit-card", "status": "live" },
+    { "id": "stablecoin", "status": "live" }
+  ],
+  "compliance": {
+    "kycRequired": true,
+    "tiers": ["singpass", "myinfo"],
+    "regulator": "Monetary Authority of Singapore"
+  },
+  "notes": "Mature card market; the differentiator is stablecoin settlement and agent spend, not access."
+}
