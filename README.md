@@ -12,6 +12,14 @@ into `data/markets/` — no TypeScript is touched, no build changes, no deploy l
 ship today (Nigeria, Kenya, Argentina, Philippines, Singapore), chosen because their user behaviour
 and funding rails differ sharply enough to stress the framework.
 
+## Docs
+
+| Document | What it covers |
+| --- | --- |
+| [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) | The country → intent → product → localized UI → onboarding → attribution pipeline, stage by stage |
+| [docs/COUNTRY_MATRIX.md](docs/COUNTRY_MATRIX.md) | The five launch markets, what makes each one different, and how to add the sixth |
+| [docs/MCP_TOOLS.md](docs/MCP_TOOLS.md) | Tool contracts, transport requirements, and conventions for adding a tool |
+
 ## Scope
 
 This is the foundation milestone. Deliberately **not** built yet: UI, Agent Card, authenticated

@@ -63,6 +63,8 @@ export const marketSchema = z.object({
     timezone: z.string().min(1),
     callingCode: z.string().regex(/^\+\d{1,4}$/),
   }),
+  /** Per-country marketing page. Optional until the localized pages exist. */
+  landingPage: z.url().optional(),
   products: z.array(marketOfferingSchema).default([]),
   funding: z.array(marketOfferingSchema).default([]),
   compliance: z
