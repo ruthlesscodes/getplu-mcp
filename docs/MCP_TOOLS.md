@@ -109,6 +109,58 @@ This matters: a tool error makes an assistant apologise and stop. A structured n
 
 ---
 
+## `get_api_status` ✅
+
+Check whether the GetPlu API itself is up. Takes no arguments.
+
+**Annotations:** `readOnlyHint: true`, `openWorldHint: true` (it touches the network).
+
+Calls `GET https://api.getplu.com/api/health` — the one PLU API endpoint that needs no
+credentials, which makes it the honest end-to-end reachability check.
+
+```json
+{
+  "reachable": true,
+  "endpoint": "https://api.getplu.com",
+  "status": "ok",
+  "service": "plu-web-api",
+  "version": "1.0.0",
+  "latencyMs": 213
+}
+```
+
+An unreachable API returns `reachable: false` with a `reason` and `isError: false`. A down
+dependency is a fact to report, not a tool failure — the assistant should be able to say "GetPlu is
+having trouble right now" rather than apologise for a broken tool.
+
+---
+
+## The PLU API
+
+Base URL `https://api.getplu.com`. OpenAPI 3.0.3 spec is published at
+[`/docs/json`](https://api.getplu.com/docs/json) with Swagger UI at `/docs`. 71 paths across auth,
+profile, KYC, cards, transactions, ledger, orders, notifications, subscriptions, and admin.
+
+Failures use a consistent envelope, which `PluApi` maps to `PluApiError`:
+
+```json
+{ "success": false, "error": { "message": "Authentication required", "code": "UNAUTHORIZED" } }
+```
+
+Two facts that shape everything after stage 1:
+
+**There is no market or country endpoint.** `market` appears zero times in the spec. `country_code`
+appears five times, always as an attribute *of a user* (auth session, profile address, KYC details)
+— never as "which countries does GetPlu serve". Market availability therefore stays in
+`data/markets/` until such an endpoint exists.
+
+**Auth is user-session based, not machine-to-machine.** `POST /api/auth/session` takes a
+`user_id`/`email`/`wallet_address` and returns a token for *that user*. There is no documented
+service credential an MCP server could carry on its own behalf. Resolving this is a prerequisite for
+pipeline stage 5, not a detail of it.
+
+---
+
 ## Planned tools
 
 Tracking the pipeline in [PRODUCT_SPEC.md](PRODUCT_SPEC.md). Names and shapes are proposals, not
@@ -116,6 +168,7 @@ commitments.
 
 | Stage | Tool | Returns | Auth |
 | --- | --- | --- | --- |
+| — | `get_api_status` ✅ | GetPlu API health | none |
 | 1 country | `get_market` ✅ | Market availability | none |
 | 2 intent | `resolve_intent` | Ranked intents from conversation text | none |
 | 3 product | `recommend_product` | Ranked products with a reason each | none |

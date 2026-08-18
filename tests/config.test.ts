@@ -8,6 +8,9 @@ describe("loadConfig", () => {
       port: 8787,
       host: "0.0.0.0",
       dataDir: undefined,
+      apiBaseUrl: "https://api.getplu.com",
+      apiToken: undefined,
+      apiTimeoutMs: 10_000,
       logLevel: "info",
     });
   });
@@ -21,6 +24,17 @@ describe("loadConfig", () => {
 
   it("rejects an unknown transport", () => {
     expect(() => loadConfig({ MCP_TRANSPORT: "grpc" })).toThrow(/MCP_TRANSPORT/);
+  });
+
+  it("runs without an API token, since /api/health is public", () => {
+    expect(loadConfig({}).apiToken).toBeUndefined();
+    expect(loadConfig({ PLU_API_TOKEN: "tok_123" }).apiToken).toBe("tok_123");
+  });
+
+  it("strips trailing slashes from the API base URL", () => {
+    expect(loadConfig({ PLU_API_BASE_URL: "https://api.getplu.com//" }).apiBaseUrl).toBe(
+      "https://api.getplu.com",
+    );
   });
 
   it("rejects an out-of-range port", () => {

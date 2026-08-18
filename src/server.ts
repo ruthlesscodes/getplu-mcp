@@ -7,6 +7,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { loadMarketRegistry, type MarketRegistry } from "./markets/registry.js";
 import { loadConfig } from "./services/config.js";
 import { createLogger, type Logger } from "./services/logger.js";
+import { PluApi } from "./services/plu-api.js";
 import { registerTools } from "./tools/index.js";
 
 export const SERVER_NAME = "getplu-mcp";
@@ -16,22 +17,22 @@ export const SERVER_VERSION = "0.2.0";
  * Builds a fully wired server. Exported so tests can drive it over an
  * in-memory transport with a registry loaded from fixtures.
  */
-export function createServer(registry: MarketRegistry): McpServer {
+export function createServer(registry: MarketRegistry, api: PluApi): McpServer {
   const server = new McpServer(
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
       instructions:
-        "GetPlu market availability. Call get_market with a country code or name to find out whether GetPlu operates there and which card products and funding methods are available.",
+        "GetPlu market availability. Call get_market with a country code or name to find out whether GetPlu operates there and which card products and funding methods are available. Call get_api_status to check whether the GetPlu API itself is up.",
     },
   );
 
-  registerTools(server, registry);
+  registerTools(server, registry, api);
   return server;
 }
 
 /** stdio: one long-lived server, for Claude Desktop and Claude Code. */
-async function runStdio(registry: MarketRegistry, logger: Logger): Promise<void> {
-  const server = createServer(registry);
+async function runStdio(registry: MarketRegistry, api: PluApi, logger: Logger): Promise<void> {
+  const server = createServer(registry, api);
 
   const shutdown = (signal: string) => {
     logger.info(`received ${signal}, shutting down`);
@@ -49,9 +50,9 @@ async function runStdio(registry: MarketRegistry, logger: Logger): Promise<void>
  * and transport per request — so it scales horizontally with no shared session
  * store. Every response is plain JSON rather than an SSE stream.
  */
-async function runHttp(registry: MarketRegistry, logger: Logger, host: string, port: number): Promise<void> {
+async function runHttp(registry: MarketRegistry, api: PluApi, logger: Logger, host: string, port: number): Promise<void> {
   const http = createHttpServer((req, res) => {
-    void handleHttpRequest(req, res, registry, logger).catch((error: unknown) => {
+    void handleHttpRequest(req, res, registry, api, logger).catch((error: unknown) => {
       logger.error("request failed", { message: error instanceof Error ? error.message : String(error) });
       if (!res.headersSent) {
         res.writeHead(500, { "content-type": "application/json" });
@@ -75,6 +76,7 @@ async function handleHttpRequest(
   req: IncomingMessage,
   res: ServerResponse,
   registry: MarketRegistry,
+  api: PluApi,
   logger: Logger,
 ): Promise<void> {
   const path = new URL(req.url ?? "/", "http://localhost").pathname;
@@ -104,7 +106,7 @@ async function handleHttpRequest(
   }
 
   const body = await readJsonBody(req);
-  const server = createServer(registry);
+  const server = createServer(registry, api);
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
@@ -142,13 +144,15 @@ async function main(): Promise<void> {
   const config = loadConfig();
   const logger = createLogger(config.logLevel);
   const registry = loadMarketRegistry(config.dataDir);
+  const api = new PluApi(config, logger);
 
   logger.info("markets loaded", { codes: registry.list().map((market) => market.code) });
+  logger.info("plu api", { baseUrl: config.apiBaseUrl, authenticated: config.apiToken !== undefined });
 
   if (config.transport === "http") {
-    await runHttp(registry, logger, config.host, config.port);
+    await runHttp(registry, api, logger, config.host, config.port);
   } else {
-    await runStdio(registry, logger);
+    await runStdio(registry, api, logger);
   }
 }
 
